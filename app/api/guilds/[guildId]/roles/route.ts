@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { discordRequest, extractToken } from '@/lib/discord';
 
-type DiscordChannel = {
+type DiscordRole = {
   id: string;
   name: string;
-  type: number;
-  parent_id?: string | null;
-  position?: number;
+  color: number;
 };
 
 export async function GET(
@@ -20,15 +18,12 @@ export async function GET(
     }
 
     const { guildId } = params;
-    const channels = await discordRequest<DiscordChannel[]>(
-      token,
-      `/guilds/${guildId}/channels`
-    );
+    const roles = await discordRequest<DiscordRole[]>(token, `/guilds/${guildId}/roles`);
 
-    return NextResponse.json(channels);
+    return NextResponse.json(roles);
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erro ao carregar canais.' },
+      { error: error instanceof Error ? error.message : 'Erro ao carregar cargos.' },
       { status: 500 }
     );
   }

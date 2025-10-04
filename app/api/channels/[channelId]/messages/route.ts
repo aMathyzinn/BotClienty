@@ -20,17 +20,35 @@ type DiscordEmbed = {
   thumbnail?: { url: string } | null;
 };
 
+type DiscordAttachment = {
+  id: string;
+  filename: string;
+  size: number;
+  url: string;
+  proxy_url?: string;
+  content_type?: string | null;
+  width?: number | null;
+  height?: number | null;
+  description?: string | null;
+};
+
+type DiscordUser = {
+  id: string;
+  username: string;
+  discriminator: string;
+  global_name?: string;
+  avatar?: string | null;
+};
+
 type DiscordMessage = {
   id: string;
   content: string;
   embeds?: DiscordEmbed[];
-  author: {
-    id: string;
-    username: string;
-    discriminator: string;
-    global_name?: string;
-    avatar?: string | null;
-  };
+  attachments?: DiscordAttachment[];
+  mentions?: DiscordUser[];
+  mention_roles?: string[];
+  mention_channels?: string[];
+  author: DiscordUser;
   timestamp: string;
 };
 
