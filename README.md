@@ -119,22 +119,21 @@
 <details>
 <summary><b>🔑 Login</b> – autenticação limpa e objetiva</summary>
 
-> Insira o token do bot e prossiga. (Adicione aqui um GIF/PNG do login)
+> Insira o token do bot e prossiga. 
 
 </details>
 
 <details>
 <summary><b>💬 Chat</b> – servidores, canais e mensagens</summary>
 
-> Navegue pela guild tree, visualize embeds e anexos em tempo real. (Coloque uma imagem aqui)
+> Navegue pela guild tree, visualize embeds e anexos em tempo real. 
 
 </details>
 
 <details>
 <summary><b>📱 Responsivo</b> – perfeito em qualquer tela</summary>
 
-> UI adaptativa com tipografia e espaçamentos consistentes. (Inclua mock de mobile)
-
+> UI adaptativa com tipografia e espaçamentos consistentes.
 </details>
 
 ---
