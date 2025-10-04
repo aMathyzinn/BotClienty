@@ -2,7 +2,7 @@
 
 <!-- =====================  HERO  ===================== -->
 
-<!-- Animated Gradient Title with Logo -->
+<!-- Animated Gradient Title (fallbacks gracefully if animations are blocked) -->
 
 <svg width="100%" height="140" viewBox="0 0 1200 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BotClienty">
   <defs>
@@ -25,11 +25,7 @@
       </feMerge>
     </filter>
   </defs>
-  <!-- Logo Image -->
-  <image x="480" y="20" width="48" height="48" href="./app/logo.webp" opacity="0.9">
-    <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
-  </image>
-  <text x="50%" y="60%" text-anchor="middle" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="800" fill="url(#grad)" filter="url(#glow)">BotClienty</text>
+  <text x="50%" y="60%" text-anchor="middle" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="800" fill="url(#grad)" filter="url(#glow)">🤖 BotClienty</text>
   <text x="50%" y="92%" text-anchor="middle" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#b5bac1">Modern web client for Discord bots</text>
 </svg>
 
@@ -42,37 +38,21 @@
   <img src="https://img.shields.io/badge/Discord-API-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord API">
 </p>
 
-<!-- Animated Wave Divider -->
+<!-- Animated Divider -->
 
 <svg width="100%" height="24" viewBox="0 0 1200 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <defs>
     <linearGradient id="wave" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#7C3AED">
-        <animate attributeName="stop-color" values="#7C3AED;#5865F2;#06B6D4;#7C3AED" dur="4s" repeatCount="indefinite"/>
-      </stop>
-      <stop offset="50%" stop-color="#5865F2">
-        <animate attributeName="stop-color" values="#5865F2;#06B6D4;#7C3AED;#5865F2" dur="4s" repeatCount="indefinite"/>
-      </stop>
-      <stop offset="100%" stop-color="#06B6D4">
-        <animate attributeName="stop-color" values="#06B6D4;#7C3AED;#5865F2;#06B6D4" dur="4s" repeatCount="indefinite"/>
-      </stop>
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="50%" stop-color="#5865F2"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
     </linearGradient>
   </defs>
   <path d="M0,12 C150,2 250,22 400,12 C550,2 650,22 800,12 C950,2 1050,22 1200,12" fill="none" stroke="url(#wave)" stroke-width="3" stroke-linecap="round">
     <animate attributeName="d" dur="6s" repeatCount="indefinite" values="
       M0,12 C150,2 250,22 400,12 C550,2 650,22 800,12 C950,2 1050,22 1200,12;
       M0,12 C150,22 250,2 400,12 C550,22 650,2 800,12 C950,22 1050,2 1200,12;
-      M0,12 C150,8 250,16 400,12 C550,8 650,16 800,12 C950,8 1050,16 1200,12;
-      M0,12 C150,16 250,8 400,12 C550,16 650,8 800,12 C950,16 1050,8 1200,12;
       M0,12 C150,2 250,22 400,12 C550,2 650,22 800,12 C950,2 1050,22 1200,12
-    "/>
-  </path>
-  <!-- Additional wave layers for more fluid effect -->
-  <path d="M0,12 C200,18 300,6 500,12 C700,18 800,6 1000,12 C1100,18 1150,6 1200,12" fill="none" stroke="url(#wave)" stroke-width="2" stroke-linecap="round" opacity="0.6">
-    <animate attributeName="d" dur="8s" repeatCount="indefinite" values="
-      M0,12 C200,18 300,6 500,12 C700,18 800,6 1000,12 C1100,18 1150,6 1200,12;
-      M0,12 C200,6 300,18 500,12 C700,6 800,18 1000,12 C1100,6 1150,18 1200,12;
-      M0,12 C200,18 300,6 500,12 C700,18 800,6 1000,12 C1100,18 1150,6 1200,12
     "/>
   </path>
 </svg>

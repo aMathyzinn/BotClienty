@@ -357,7 +357,7 @@ function renderAttachment(attachment: DiscordAttachment, index: number) {
   );
 }
 
-const DISCORD_API_BASE = 'https://discord.com/api/v10';
+const DISCORD_API_BASE = '/api/discord';
 const DISCORD_CDN = 'https://cdn.discordapp.com';
 
 function formatUserTag(user: DiscordUser) {
@@ -517,13 +517,12 @@ export default function Home() {
     try {
       const data = await authedFetch<DiscordGuild[]>(token, '/users/@me/guilds');
       setGuilds(data);
-      if (!selectedGuildId && data.length > 0) {
-        setSelectedGuildId(data[0].id);
-      }
+      // Seleciona o primeiro servidor apenas se nenhum estiver selecionado
+      setSelectedGuildId(prev => prev || (data.length > 0 ? data[0].id : null));
     } catch (error) {
-      console.error(error);
+      console.error('Erro ao carregar servidores:', error);
     }
-  }, [authToken, selectedGuildId]);
+  }, [authToken]);
 
   const loadDmChannels = useCallback(async () => {
     if (!authToken) return;
@@ -533,7 +532,7 @@ export default function Home() {
       const directMessages = data.filter((channel) => channel.type === 1);
       setDmChannels(directMessages);
     } catch (error) {
-      console.error(error);
+      console.error('Erro ao carregar mensagens diretas:', error);
     }
   }, [authToken]);
 
@@ -567,7 +566,8 @@ export default function Home() {
           setSelectedChannelId(textChannels[0]?.id ?? null);
         }
       } catch (error) {
-        console.error(error);
+        console.error('Erro ao carregar canais do servidor:', error);
+        setChannels([]);
       } finally {
         setIsLoadingChannels(false);
       }
@@ -592,7 +592,8 @@ export default function Home() {
         );
         setMessages(data.reverse());
       } catch (error) {
-        console.error(error);
+        console.error('Erro ao carregar mensagens do canal:', error);
+        setMessages([]);
       } finally {
         setIsLoadingMessages(false);
       }
@@ -616,7 +617,8 @@ export default function Home() {
         );
         setRoles(data);
       } catch (error) {
-        console.error(error);
+        console.error('Erro ao carregar roles do servidor:', error);
+        setRoles([]);
       }
     };
 
