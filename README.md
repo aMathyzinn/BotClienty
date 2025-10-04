@@ -2,7 +2,7 @@
 
 <!-- =====================  HERO  ===================== -->
 
-<!-- Animated Gradient Title (fallbacks gracefully if animations are blocked) -->
+<!-- Animated Gradient Title with Logo -->
 
 <svg width="100%" height="140" viewBox="0 0 1200 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BotClienty">
   <defs>
@@ -25,7 +25,11 @@
       </feMerge>
     </filter>
   </defs>
-  <text x="50%" y="60%" text-anchor="middle" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="800" fill="url(#grad)" filter="url(#glow)">🤖 BotClienty</text>
+  <!-- Logo Image -->
+  <image x="480" y="20" width="48" height="48" href="./app/logo.webp" opacity="0.9">
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
+  </image>
+  <text x="50%" y="60%" text-anchor="middle" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="800" fill="url(#grad)" filter="url(#glow)">BotClienty</text>
   <text x="50%" y="92%" text-anchor="middle" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#b5bac1">Modern web client for Discord bots</text>
 </svg>
 
@@ -119,21 +123,22 @@
 <details>
 <summary><b>🔑 Login</b> – autenticação limpa e objetiva</summary>
 
-> Insira o token do bot e prossiga. 
+> Insira o token do bot e prossiga. (Adicione aqui um GIF/PNG do login)
 
 </details>
 
 <details>
 <summary><b>💬 Chat</b> – servidores, canais e mensagens</summary>
 
-> Navegue pela guild tree, visualize embeds e anexos em tempo real. 
+> Navegue pela guild tree, visualize embeds e anexos em tempo real. (Coloque uma imagem aqui)
 
 </details>
 
 <details>
 <summary><b>📱 Responsivo</b> – perfeito em qualquer tela</summary>
 
-> UI adaptativa com tipografia e espaçamentos consistentes.
+> UI adaptativa com tipografia e espaçamentos consistentes. (Inclua mock de mobile)
+
 </details>
 
 ---
