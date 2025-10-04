@@ -357,6 +357,7 @@ function renderAttachment(attachment: DiscordAttachment, index: number) {
   );
 }
 
+const DISCORD_API_BASE = 'https://discord.com/api/v10';
 const DISCORD_CDN = 'https://cdn.discordapp.com';
 
 function formatUserTag(user: DiscordUser) {
@@ -402,26 +403,54 @@ function getChannelDisplayName(channel: DiscordChannel | null) {
   return channel.name;
 }
 
-type FetchMethod = 'GET' | 'POST';
+type FetchMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD';
 
 async function authedFetch<T>(
   token: string,
-  url: string,
+  endpoint: string,
   method: FetchMethod = 'GET',
   body?: Record<string, unknown>
 ): Promise<T> {
-  const response = await fetch(url, {
+  const headers: HeadersInit = {
+    Authorization: `Bot ${token}`,
+    Accept: 'application/json'
+  };
+
+  const hasBody = Boolean(body) && method !== 'GET' && method !== 'HEAD';
+  if (hasBody) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const response = await fetch(`${DISCORD_API_BASE}${endpoint}`, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
-    body: body ? JSON.stringify(body) : undefined
+    headers,
+    body: hasBody ? JSON.stringify(body) : undefined,
+    cache: 'no-store'
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || 'Falha ao comunicar com o servidor.');
+    let message = 'Falha ao comunicar com o Discord.';
+    try {
+      const data = await response.json();
+      if (data && typeof data === 'object' && 'message' in data) {
+        message = String((data as { message?: string }).message ?? message);
+      } else {
+        message = JSON.stringify(data);
+      }
+    } catch {
+      try {
+        message = await response.text();
+      } catch {
+        // ignore parsing errors
+      }
+    }
+
+    throw new Error(message || 'Falha ao comunicar com o Discord.');
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (response.status === 204 || !contentType.includes('application/json')) {
+    return undefined as T;
   }
 
   return (await response.json()) as T;
@@ -460,9 +489,10 @@ export default function Home() {
     async function loadIdentity() {
       try {
         setIsAuthenticating(true);
-        const bot = await authedFetch<BotUser>(token, '/api/authenticate', 'POST', {
-          token
-        });
+        const bot = await authedFetch<BotUser>(token, '/users/@me');
+        if (!bot.bot) {
+          throw new Error('A token informada não pertence a um bot.');
+        }
         setBotUser(bot);
         setAuthError(null);
       } catch (error) {
@@ -485,7 +515,7 @@ export default function Home() {
     if (!authToken) return;
     const token = authToken;
     try {
-      const data = await authedFetch<DiscordGuild[]>(token, '/api/guilds');
+      const data = await authedFetch<DiscordGuild[]>(token, '/users/@me/guilds');
       setGuilds(data);
       if (!selectedGuildId && data.length > 0) {
         setSelectedGuildId(data[0].id);
@@ -499,8 +529,9 @@ export default function Home() {
     if (!authToken) return;
     const token = authToken;
     try {
-      const data = await authedFetch<DiscordChannel[]>(token, '/api/users/me/dms');
-      setDmChannels(data);
+      const data = await authedFetch<DiscordChannel[]>(token, '/users/@me/channels');
+      const directMessages = data.filter((channel) => channel.type === 1);
+      setDmChannels(directMessages);
     } catch (error) {
       console.error(error);
     }
@@ -525,7 +556,7 @@ export default function Home() {
         setIsLoadingChannels(true);
         const data = await authedFetch<DiscordChannel[]>(
           token,
-          `/api/guilds/${selectedGuildId}/channels`
+          `/guilds/${selectedGuildId}/channels`
         );
         const sortedChannels = [...data].sort(
           (a, b) => (a.position ?? 0) - (b.position ?? 0)
@@ -557,7 +588,7 @@ export default function Home() {
         setIsLoadingMessages(true);
         const data = await authedFetch<DiscordMessage[]>(
           token,
-          `/api/channels/${selectedChannelId}/messages`
+          `/channels/${selectedChannelId}/messages?limit=50`
         );
         setMessages(data.reverse());
       } catch (error) {
@@ -581,7 +612,7 @@ export default function Home() {
       try {
         const data = await authedFetch<DiscordRole[]>(
           token,
-          `/api/guilds/${selectedGuildId}/roles`
+          `/guilds/${selectedGuildId}/roles`
         );
         setRoles(data);
       } catch (error) {
@@ -601,32 +632,26 @@ export default function Home() {
     try {
       const sanitizedToken = tokenInput.trim();
 
-      const response = await fetch('/api/authenticate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: sanitizedToken })
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao autenticar');
+      const bot = await authedFetch<BotUser>(sanitizedToken, '/users/@me');
+      if (!bot.bot) {
+        throw new Error('A token informada não pertence a um bot.');
       }
-
-      const bot = (await response.json()) as BotUser;
       setBotUser(bot);
       setAuthToken(sanitizedToken);
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('discord-bot-token', sanitizedToken);
       }
       const [guildData, dmData] = await Promise.all([
-        authedFetch<DiscordGuild[]>(sanitizedToken, '/api/guilds'),
-        authedFetch<DiscordChannel[]>(sanitizedToken, '/api/users/me/dms')
+        authedFetch<DiscordGuild[]>(sanitizedToken, '/users/@me/guilds'),
+        authedFetch<DiscordChannel[]>(sanitizedToken, '/users/@me/channels')
       ]);
       setGuilds(guildData);
-      setDmChannels(dmData);
+      const directMessages = dmData.filter((channel) => channel.type === 1);
+      setDmChannels(directMessages);
       if (guildData.length > 0) {
         setSelectedGuildId(guildData[0].id);
-      } else if (dmData.length > 0) {
-        setSelectedChannelId(dmData[0].id);
+      } else if (directMessages.length > 0) {
+        setSelectedChannelId(directMessages[0].id);
       }
     } catch (error) {
       console.error(error);
@@ -668,12 +693,12 @@ export default function Home() {
     const token = authToken;
 
     try {
-      await authedFetch(token, `/api/channels/${selectedChannelId}/messages`, 'POST', {
+      await authedFetch(token, `/channels/${selectedChannelId}/messages`, 'POST', {
         content
       });
       const newMessages = await authedFetch<DiscordMessage[]>(
         token,
-        `/api/channels/${selectedChannelId}/messages`
+        `/channels/${selectedChannelId}/messages?limit=50`
       );
       setMessages(newMessages.reverse());
     } catch (error) {
