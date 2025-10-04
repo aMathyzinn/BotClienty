@@ -229,6 +229,31 @@ input, textarea {
   gap: 0.25rem;
 }
 
+.channel-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.channel-group {
+  list-style: none;
+}
+
+.channel-category {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.channel-category-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b5bac1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 0.25rem;
+}
+
 .channel-sidebar li button {
   width: 100%;
   text-align: left;
@@ -298,7 +323,7 @@ input, textarea {
   gap: 0.75rem;
 }
 
-.message img {
+.message > img {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -332,6 +357,77 @@ input, textarea {
 
 .message-text {
   white-space: pre-wrap;
+}
+
+.mention {
+  background: #3a3c43;
+  padding: 0 0.25rem;
+  border-radius: 3px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mention-user {
+  color: #f2f3f5;
+}
+
+.mention-role {
+  color: #f7c67f;
+}
+
+.mention-channel {
+  color: #5da8ff;
+}
+
+.mention-everyone {
+  color: #f47fff;
+}
+
+.message-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.message-attachment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.message-attachment.image {
+  max-width: min(480px, 100%);
+}
+
+.message-attachment.image img {
+  width: 100%;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.message-attachment.image figcaption {
+  font-size: 0.75rem;
+  color: #b5bac1;
+}
+
+.message-attachment.video,
+.message-attachment.audio {
+  max-width: min(520px, 100%);
+}
+
+.message-attachment video,
+.message-attachment audio {
+  width: 100%;
+  border-radius: 6px;
+  background: #000;
+}
+
+.message-attachment.file a {
+  color: #00a8fc;
+  word-break: break-word;
 }
 
 .message-content a,
@@ -442,6 +538,12 @@ input, textarea {
   object-fit: cover;
   border-radius: 4px;
   align-self: flex-end;
+}
+
+.embed-video {
+  width: 100%;
+  border-radius: 4px;
+  background: #000;
 }
 
 .embed-footer {

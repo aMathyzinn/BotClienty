@@ -24,7 +24,27 @@ type DiscordChannel = {
   id: string;
   name: string;
   type: number;
+  parent_id?: string | null;
+  position?: number;
   recipients?: DiscordUser[];
+};
+
+type DiscordRole = {
+  id: string;
+  name: string;
+  color: number;
+};
+
+type DiscordAttachment = {
+  id: string;
+  filename: string;
+  size: number;
+  url: string;
+  proxy_url?: string;
+  content_type?: string | null;
+  width?: number | null;
+  height?: number | null;
+  description?: string | null;
 };
 
 type DiscordMessage = {
@@ -33,6 +53,10 @@ type DiscordMessage = {
   author: DiscordUser;
   timestamp: string;
   embeds?: DiscordEmbed[];
+  attachments?: DiscordAttachment[];
+  mentions?: DiscordUser[];
+  mention_roles?: string[];
+  mention_channels?: string[];
 };
 
 type DiscordEmbed = {
@@ -52,16 +76,25 @@ type DiscordEmbed = {
   };
   image?: { url: string } | null;
   thumbnail?: { url: string } | null;
+  video?: { url?: string } | null;
 };
 
 type MessageContentPart =
   | { type: 'text'; content: string }
   | { type: 'link'; url: string }
-  | { type: 'emoji'; id: string; name: string; animated: boolean };
+  | { type: 'emoji'; id: string; name: string; animated: boolean }
+  | { type: 'mention'; mentionType: 'user' | 'role' | 'channel' | 'everyone'; id: string; label: string };
 
-function parseMessageContent(content: string): MessageContentPart[] {
+type FormattingContext = {
+  users?: Record<string, DiscordUser>;
+  roles?: Record<string, DiscordRole>;
+  channels?: Record<string, DiscordChannel>;
+};
+
+function parseMessageContent(content: string, context?: FormattingContext): MessageContentPart[] {
   const parts: MessageContentPart[] = [];
-  const pattern = /(<a?:[\w-]+:\d+>)|(https?:\/\/[^\s]+)/g;
+  const pattern =
+    /(<a?:[\w-]+:\d+>)|(https?:\/\/[^\s]+)|(<@[!&]?\d+>|<#\d+>|@everyone|@here)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -82,6 +115,44 @@ function parseMessageContent(content: string): MessageContentPart[] {
       }
     } else if (match[2]) {
       parts.push({ type: 'link', url: match[2] });
+    } else if (match[3]) {
+      const rawMention = match[3];
+      if (rawMention === '@everyone' || rawMention === '@here') {
+        parts.push({
+          type: 'mention',
+          mentionType: 'everyone',
+          id: rawMention,
+          label: rawMention
+        });
+      } else if (rawMention.startsWith('<#')) {
+        const id = rawMention.replace(/[<#>]/g, '');
+        const channel = context?.channels?.[id];
+        parts.push({
+          type: 'mention',
+          mentionType: 'channel',
+          id,
+          label: channel ? `#${channel.name}` : '#canal'
+        });
+      } else if (rawMention.startsWith('<@&')) {
+        const id = rawMention.replace(/[<@&>]/g, '');
+        const role = context?.roles?.[id];
+        parts.push({
+          type: 'mention',
+          mentionType: 'role',
+          id,
+          label: role ? `@${role.name}` : '@cargo'
+        });
+      } else if (rawMention.startsWith('<@')) {
+        const id = rawMention.replace(/[<@!>]/g, '');
+        const user = context?.users?.[id];
+        const display = user ? formatUserTag(user) : '@usuário';
+        parts.push({
+          type: 'mention',
+          mentionType: 'user',
+          id,
+          label: display.startsWith('@') ? display : `@${display}`
+        });
+      }
     }
 
     lastIndex = pattern.lastIndex;
@@ -98,8 +169,8 @@ function parseMessageContent(content: string): MessageContentPart[] {
   return parts;
 }
 
-function renderFormattedContent(content: string) {
-  return parseMessageContent(content).map((part, index) => {
+function renderFormattedContent(content: string, context?: FormattingContext) {
+  return parseMessageContent(content, context).map((part, index) => {
     if (part.type === 'text') {
       return (
         <span key={`text-${index}`} className="message-text">
@@ -121,23 +192,31 @@ function renderFormattedContent(content: string) {
       );
     }
 
+    if (part.type === 'emoji') {
+      return (
+        <img
+          key={`emoji-${index}`}
+          src={`https://cdn.discordapp.com/emojis/${part.id}.${part.animated ? 'gif' : 'png'}?quality=lossless`}
+          alt={`:${part.name}:`}
+          className="custom-emoji"
+        />
+      );
+    }
+
     return (
-      <img
-        key={`emoji-${index}`}
-        src={`https://cdn.discordapp.com/emojis/${part.id}.${part.animated ? 'gif' : 'png'}?quality=lossless`}
-        alt={`:${part.name}:`}
-        className="custom-emoji"
-      />
+      <span key={`mention-${index}`} className={`mention mention-${part.mentionType}`}>
+        {part.label}
+      </span>
     );
   });
 }
 
-function renderEmbedText(content?: string) {
+function renderEmbedText(content?: string, context?: FormattingContext) {
   if (!content) return null;
-  return <div className="embed-text">{renderFormattedContent(content)}</div>;
+  return <div className="embed-text">{renderFormattedContent(content, context)}</div>;
 }
 
-function renderEmbed(embed: DiscordEmbed, index: number) {
+function renderEmbed(embed: DiscordEmbed, index: number, context?: FormattingContext) {
   const color = embed.color
     ? `#${embed.color.toString(16).padStart(6, '0')}`
     : '#5865f2';
@@ -169,7 +248,7 @@ function renderEmbed(embed: DiscordEmbed, index: number) {
             <div className="embed-title">{embed.title}</div>
           )
         )}
-        {renderEmbedText(embed.description)}
+        {renderEmbedText(embed.description, context)}
         {embed.fields && embed.fields.length > 0 && (
           <div className="embed-fields">
             {embed.fields.map((field, fieldIndex) => (
@@ -178,7 +257,7 @@ function renderEmbed(embed: DiscordEmbed, index: number) {
                 className={`embed-field ${field.inline ? 'inline' : ''}`}
               >
                 <div className="embed-field-name">{field.name}</div>
-                <div className="embed-field-value">{renderFormattedContent(field.value)}</div>
+                <div className="embed-field-value">{renderFormattedContent(field.value, context)}</div>
               </div>
             ))}
           </div>
@@ -193,6 +272,9 @@ function renderEmbed(embed: DiscordEmbed, index: number) {
             className="embed-thumbnail"
           />
         )}
+        {embed.video?.url && (
+          <video className="embed-video" controls src={embed.video.url} />
+        )}
         {embed.footer && (
           <div className="embed-footer">
             {embed.footer.icon_url && (
@@ -202,6 +284,75 @@ function renderEmbed(embed: DiscordEmbed, index: number) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function buildUserMap(users?: DiscordUser[]): Record<string, DiscordUser> | undefined {
+  if (!users || users.length === 0) {
+    return undefined;
+  }
+
+  return users.reduce<Record<string, DiscordUser>>((acc, user) => {
+    acc[user.id] = user;
+    return acc;
+  }, {});
+}
+
+function getAttachmentKind(attachment: DiscordAttachment): 'image' | 'video' | 'audio' | 'file' {
+  const contentType = attachment.content_type?.toLowerCase() ?? '';
+  if (contentType.startsWith('image/')) return 'image';
+  if (contentType.startsWith('video/')) return 'video';
+  if (contentType.startsWith('audio/')) return 'audio';
+
+  const extension = attachment.filename.split('.').pop()?.toLowerCase() ?? '';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(extension)) return 'image';
+  if (['mp4', 'mov', 'webm', 'mkv'].includes(extension)) return 'video';
+  if (['mp3', 'wav', 'ogg', 'flac'].includes(extension)) return 'audio';
+
+  return 'file';
+}
+
+function renderAttachment(attachment: DiscordAttachment, index: number) {
+  const kind = getAttachmentKind(attachment);
+  const description = attachment.description ?? attachment.filename;
+
+  if (kind === 'image') {
+    return (
+      <figure key={`attachment-${attachment.id}-${index}`} className="message-attachment image">
+        <img src={attachment.url} alt={description} />
+        {attachment.description && <figcaption>{attachment.description}</figcaption>}
+      </figure>
+    );
+  }
+
+  if (kind === 'video') {
+    return (
+      <div key={`attachment-${attachment.id}-${index}`} className="message-attachment video">
+        <video controls src={attachment.url} />
+        <a href={attachment.url} target="_blank" rel="noreferrer noopener">
+          {description}
+        </a>
+      </div>
+    );
+  }
+
+  if (kind === 'audio') {
+    return (
+      <div key={`attachment-${attachment.id}-${index}`} className="message-attachment audio">
+        <audio controls src={attachment.url} />
+        <a href={attachment.url} target="_blank" rel="noreferrer noopener">
+          {description}
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div key={`attachment-${attachment.id}-${index}`} className="message-attachment file">
+      <a href={attachment.url} target="_blank" rel="noreferrer noopener">
+        📎 {description}
+      </a>
     </div>
   );
 }
@@ -240,6 +391,17 @@ function userAvatarUrl(user: DiscordUser) {
   return `${DISCORD_CDN}/avatars/${user.id}/${user.avatar}.${format}?size=128`;
 }
 
+function getChannelDisplayName(channel: DiscordChannel | null) {
+  if (!channel) return '';
+  if (channel.recipients && channel.recipients.length > 0) {
+    return formatUserTag(channel.recipients[0]);
+  }
+  if (channel.type === 1 || channel.type === 3) {
+    return channel.name ?? 'Mensagem Direta';
+  }
+  return channel.name;
+}
+
 type FetchMethod = 'GET' | 'POST';
 
 async function authedFetch<T>(
@@ -273,6 +435,7 @@ export default function Home() {
   const [dmChannels, setDmChannels] = useState<DiscordChannel[]>([]);
   const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null);
   const [channels, setChannels] = useState<DiscordChannel[]>([]);
+  const [roles, setRoles] = useState<DiscordRole[]>([]);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [messages, setMessages] = useState<DiscordMessage[]>([]);
   const [messageInput, setMessageInput] = useState('');
@@ -352,6 +515,7 @@ export default function Home() {
   useEffect(() => {
     if (!authToken || !selectedGuildId) {
       setChannels([]);
+      setRoles([]);
       return;
     }
 
@@ -363,10 +527,13 @@ export default function Home() {
           token,
           `/api/guilds/${selectedGuildId}/channels`
         );
-        const textChannels = data.filter((channel) => channel.type === 0);
-        setChannels(textChannels);
-        if (!selectedChannelId && textChannels.length > 0) {
-          setSelectedChannelId(textChannels[0].id);
+        const sortedChannels = [...data].sort(
+          (a, b) => (a.position ?? 0) - (b.position ?? 0)
+        );
+        setChannels(sortedChannels);
+        const textChannels = sortedChannels.filter((channel) => channel.type === 0);
+        if (!selectedChannelId || !textChannels.some((channel) => channel.id === selectedChannelId)) {
+          setSelectedChannelId(textChannels[0]?.id ?? null);
         }
       } catch (error) {
         console.error(error);
@@ -402,6 +569,28 @@ export default function Home() {
 
     fetchMessages();
   }, [authToken, selectedChannelId]);
+
+  useEffect(() => {
+    if (!authToken || !selectedGuildId) {
+      return;
+    }
+
+    setRoles([]);
+    const token = authToken;
+    const fetchRoles = async () => {
+      try {
+        const data = await authedFetch<DiscordRole[]>(
+          token,
+          `/api/guilds/${selectedGuildId}/roles`
+        );
+        setRoles(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchRoles();
+  }, [authToken, selectedGuildId]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -494,11 +683,56 @@ export default function Home() {
   };
 
   const selectedChannel = useMemo(
-    () => channels.find((channel) => channel.id === selectedChannelId) ??
+    () =>
+      channels.find((channel) => channel.id === selectedChannelId) ??
       dmChannels.find((channel) => channel.id === selectedChannelId) ??
       null,
     [channels, dmChannels, selectedChannelId]
   );
+
+  const guildTextChannels = useMemo(
+    () => channels.filter((channel) => channel.type === 0),
+    [channels]
+  );
+
+  const uncategorizedChannels = useMemo(
+    () => guildTextChannels.filter((channel) => !channel.parent_id),
+    [guildTextChannels]
+  );
+
+  const categoryGroups = useMemo(
+    () =>
+      channels
+        .filter((channel) => channel.type === 4)
+        .map((category) => ({
+          category,
+          channels: guildTextChannels.filter((channel) => channel.parent_id === category.id)
+        }))
+        .filter((group) => group.channels.length > 0),
+    [channels, guildTextChannels]
+  );
+
+  const rolesById = useMemo(() => {
+    if (!selectedGuildId) {
+      return {} as Record<string, DiscordRole>;
+    }
+
+    return roles.reduce<Record<string, DiscordRole>>((acc, role) => {
+      acc[role.id] = role;
+      return acc;
+    }, {});
+  }, [roles, selectedGuildId]);
+
+  const channelsById = useMemo(() => {
+    if (!selectedGuildId) {
+      return {} as Record<string, DiscordChannel>;
+    }
+
+    return channels.reduce<Record<string, DiscordChannel>>((acc, channel) => {
+      acc[channel.id] = channel;
+      return acc;
+    }, {});
+  }, [channels, selectedGuildId]);
 
   const logout = () => {
     setAuthToken(null);
@@ -577,23 +811,49 @@ export default function Home() {
       </header>
       <section>
         {selectedGuildId ? (
-          <ul>
-            {isLoadingChannels && <li className="placeholder">Carregando canais...</li>}
-            {channels.map((channel) => (
-              <li key={channel.id}>
-                <button
-                  className={selectedChannelId === channel.id ? 'active' : ''}
-                  onClick={() => handleSelectChannel(channel.id)}
-                  type="button"
-                >
-                  # {channel.name}
-                </button>
-              </li>
-            ))}
-            {!isLoadingChannels && channels.length === 0 && (
-              <li className="placeholder">Nenhum canal de texto disponível.</li>
+          <div className="channel-groups">
+            {isLoadingChannels && <p className="placeholder">Carregando canais...</p>}
+            {!isLoadingChannels && (
+              <>
+                {uncategorizedChannels.length > 0 && (
+                  <ul className="channel-group">
+                    {uncategorizedChannels.map((channel) => (
+                      <li key={channel.id}>
+                        <button
+                          className={selectedChannelId === channel.id ? 'active' : ''}
+                          onClick={() => handleSelectChannel(channel.id)}
+                          type="button"
+                        >
+                          # {channel.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {categoryGroups.map(({ category, channels: groupedChannels }) => (
+                  <div key={category.id} className="channel-category">
+                    <div className="channel-category-title">{category.name || 'Sem categoria'}</div>
+                    <ul>
+                      {groupedChannels.map((channel) => (
+                        <li key={channel.id}>
+                          <button
+                            className={selectedChannelId === channel.id ? 'active' : ''}
+                            onClick={() => handleSelectChannel(channel.id)}
+                            type="button"
+                          >
+                            # {channel.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                {uncategorizedChannels.length === 0 && categoryGroups.length === 0 && (
+                  <p className="placeholder">Nenhum canal de texto disponível.</p>
+                )}
+              </>
             )}
-          </ul>
+          </div>
         ) : (
           <ul>
             {dmChannels.map((channel) => {
@@ -621,76 +881,102 @@ export default function Home() {
     </aside>
   );
 
-  const renderMessages = () => (
-    <main className="chat-area">
-      <header className="chat-header">
-        <div>
-          <h2>
-            {selectedGuildId ? '#' : ''}
-            {selectedChannel?.name ?? 'Selecione um canal'}
-          </h2>
-          <span>
-            {botUser ? `Conectado como ${formatUserTag(botUser)}` : 'Não autenticado'}
-          </span>
-        </div>
-      </header>
-      <section className="message-list">
-        {isLoadingMessages && <div className="placeholder">Carregando mensagens...</div>}
-        {!isLoadingMessages && messages.length === 0 && (
-          <div className="placeholder">Nenhuma mensagem carregada ainda.</div>
-        )}
-        {messages.map((message) => {
-          const hasContent = Boolean(message.content?.trim());
-          const hasEmbeds = Boolean(message.embeds && message.embeds.length > 0);
+  const renderMessages = () => {
+    const headerTitle = selectedChannel
+      ? selectedGuildId
+        ? `#${selectedChannel.name}`
+        : getChannelDisplayName(selectedChannel)
+      : 'Selecione um canal';
 
-          return (
-            <article key={message.id} className="message">
-              <img src={userAvatarUrl(message.author)} alt={message.author.username} />
-              <div>
-                <header>
-                  <strong>{message.author.global_name ?? message.author.username}</strong>
-                  <span>{formatDate(message.timestamp)}</span>
-                </header>
-                {hasContent && (
-                  <div className="message-content">{renderFormattedContent(message.content)}</div>
-                )}
-                {!hasContent && !hasEmbeds && (
-                  <p className="message-placeholder">
-                    <em>Mensagem sem conteúdo</em>
-                  </p>
-                )}
-                {hasEmbeds && message.embeds?.map((embed, index) => renderEmbed(embed, index))}
-              </div>
-            </article>
-          );
-        })}
-      </section>
-      <footer className="message-composer">
-        <form onSubmit={handleSendMessage}>
-          <textarea
-            value={messageInput}
-            placeholder={
-              selectedChannel
-                ? `Enviar mensagem para ${selectedChannel.name}`
-                : 'Selecione um canal para enviar mensagens'
-            }
-            onChange={(event) => setMessageInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                event.currentTarget.form?.requestSubmit();
-              }
-            }}
-            disabled={!selectedChannelId}
-            rows={2}
-          />
-          <button type="submit" disabled={!selectedChannelId || !messageInput.trim()}>
-            Enviar
-          </button>
-        </form>
-      </footer>
-    </main>
-  );
+    const composerPlaceholder = selectedChannel
+      ? selectedGuildId
+        ? `Enviar mensagem para ${selectedChannel.name}`
+        : `Enviar mensagem para ${getChannelDisplayName(selectedChannel)}`
+      : 'Selecione um canal para enviar mensagens';
+
+    return (
+      <main className="chat-area">
+        <header className="chat-header">
+          <div>
+            <h2>{headerTitle}</h2>
+            <span>
+              {botUser ? `Conectado como ${formatUserTag(botUser)}` : 'Não autenticado'}
+            </span>
+          </div>
+        </header>
+        <section className="message-list">
+          {isLoadingMessages && <div className="placeholder">Carregando mensagens...</div>}
+          {!isLoadingMessages && messages.length === 0 && (
+            <div className="placeholder">Nenhuma mensagem carregada ainda.</div>
+          )}
+          {messages.map((message) => {
+            const hasContent = Boolean(message.content?.trim());
+            const hasEmbeds = Boolean(message.embeds && message.embeds.length > 0);
+            const attachments = message.attachments ?? [];
+            const hasAttachments = attachments.length > 0;
+            const formattingContext: FormattingContext = {
+              users: buildUserMap(message.mentions),
+              roles: selectedGuildId ? rolesById : undefined,
+              channels: selectedGuildId ? channelsById : undefined
+            };
+
+            return (
+              <article key={message.id} className="message">
+                <img src={userAvatarUrl(message.author)} alt={message.author.username} />
+                <div>
+                  <header>
+                    <strong>{message.author.global_name ?? message.author.username}</strong>
+                    <span>{formatDate(message.timestamp)}</span>
+                  </header>
+                  {hasContent && (
+                    <div className="message-content">
+                      {renderFormattedContent(message.content, formattingContext)}
+                    </div>
+                  )}
+                  {!hasContent && !hasEmbeds && !hasAttachments && (
+                    <p className="message-placeholder">
+                      <em>Mensagem sem conteúdo</em>
+                    </p>
+                  )}
+                  {hasAttachments && (
+                    <div className="message-attachments">
+                      {attachments.map((attachment, index) =>
+                        renderAttachment(attachment, index)
+                      )}
+                    </div>
+                  )}
+                  {hasEmbeds &&
+                    message.embeds?.map((embed, index) =>
+                      renderEmbed(embed, index, formattingContext)
+                    )}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+        <footer className="message-composer">
+          <form onSubmit={handleSendMessage}>
+            <textarea
+              value={messageInput}
+              placeholder={composerPlaceholder}
+              onChange={(event) => setMessageInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+              disabled={!selectedChannelId}
+              rows={2}
+            />
+            <button type="submit" disabled={!selectedChannelId || !messageInput.trim()}>
+              Enviar
+            </button>
+          </form>
+        </footer>
+      </main>
+    );
+  };
 
   if (!authToken || !botUser) {
     return renderLogin();
