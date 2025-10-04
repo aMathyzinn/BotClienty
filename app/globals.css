@@ -64,6 +64,33 @@ input, textarea {
   min-height: 100vh;
   background: radial-gradient(circle at top, #5865f2 0%, rgba(88, 101, 242, 0.1) 40%, #1e1f22 85%);
   padding: 2rem;
+  padding-top: 4rem;
+}
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  background: #2b2d31;
+  border-bottom: 1px solid #1e1f22;
+  z-index: 10;
+  gap: 0.75rem;
+}
+
+.topbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.topbar strong {
+  font-size: 1rem;
 }
 
 .login-card {

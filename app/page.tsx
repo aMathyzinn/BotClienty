@@ -131,7 +131,7 @@ function parseMessageContent(content: string, context?: FormattingContext): Mess
           type: 'mention',
           mentionType: 'channel',
           id,
-          label: channel ? `#${channel.name}` : '#canal'
+          label: channel ? `#${channel.name}` : '#channel'
         });
       } else if (rawMention.startsWith('<@&')) {
         const id = rawMention.replace(/[<@&>]/g, '');
@@ -140,12 +140,12 @@ function parseMessageContent(content: string, context?: FormattingContext): Mess
           type: 'mention',
           mentionType: 'role',
           id,
-          label: role ? `@${role.name}` : '@cargo'
+          label: role ? `@${role.name}` : '@role'
         });
       } else if (rawMention.startsWith('<@')) {
         const id = rawMention.replace(/[<@!>]/g, '');
         const user = context?.users?.[id];
-        const display = user ? formatUserTag(user) : '@usuário';
+        const display = user ? formatUserTag(user) : '@user';
         parts.push({
           type: 'mention',
           mentionType: 'user',
@@ -398,7 +398,7 @@ function getChannelDisplayName(channel: DiscordChannel | null) {
     return formatUserTag(channel.recipients[0]);
   }
   if (channel.type === 1 || channel.type === 3) {
-    return channel.name ?? 'Mensagem Direta';
+    return channel.name ?? 'Direct Message';
   }
   return channel.name;
 }
@@ -429,7 +429,7 @@ async function authedFetch<T>(
   });
 
   if (!response.ok) {
-    let message = 'Falha ao comunicar com o Discord.';
+    let message = 'Failed to communicate with Discord.';
     try {
       const data = await response.json();
       if (data && typeof data === 'object' && 'message' in data) {
@@ -445,7 +445,7 @@ async function authedFetch<T>(
       }
     }
 
-    throw new Error(message || 'Falha ao comunicar com o Discord.');
+    throw new Error(message || 'Failed to communicate with Discord.');
   }
 
   const contentType = response.headers.get('content-type') ?? '';
@@ -497,7 +497,7 @@ export default function Home() {
         setAuthError(null);
       } catch (error) {
         console.error(error);
-        setAuthError('Token inválida ou sem permissões suficientes.');
+        setAuthError('Invalid token or insufficient permissions.');
         setAuthToken(null);
         setBotUser(null);
         if (typeof window !== 'undefined') {
@@ -634,7 +634,7 @@ export default function Home() {
 
       const bot = await authedFetch<BotUser>(sanitizedToken, '/users/@me');
       if (!bot.bot) {
-        throw new Error('A token informada não pertence a um bot.');
+        throw new Error('The provided token does not belong to a bot.');
       }
       setBotUser(bot);
       setAuthToken(sanitizedToken);
@@ -655,7 +655,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error(error);
-      setAuthError('Não foi possível validar a token. Verifique e tente novamente.');
+      setAuthError('Could not validate token. Please check and try again.');
     } finally {
       setIsAuthenticating(false);
     }
@@ -775,10 +775,14 @@ export default function Home() {
 
   const renderLogin = () => (
     <div className="login-overlay">
+      <div className="topbar">
+        <img src="/logo.webp" alt="BotClienty Logo" className="topbar-logo" />
+        <strong>BotClienty</strong>
+      </div>
       <form className="login-card" onSubmit={handleLogin}>
-        <h1>Discord Bot Client</h1>
-        <p>Insira a token do seu bot para assumir o controle.</p>
-        <label htmlFor="token">Token do bot</label>
+        <h1>BotClienty</h1>
+        <p>Enter your bot token to take control.</p>
+        <label htmlFor="token">Bot token</label>
         <input
           id="token"
           type="password"
@@ -789,12 +793,12 @@ export default function Home() {
         />
         {authError && <span className="error">{authError}</span>}
         <button type="submit" disabled={isAuthenticating}>
-          {isAuthenticating ? 'Validando...' : 'Entrar'}
+          {isAuthenticating ? 'Validating...' : 'Login'}
         </button>
         <small>
-          A aplicação autentica como um bot e utiliza as permissões concedidas à token para
-          acessar servidores, canais e mensagens.
-        </small>
+            The application authenticates as a bot and uses the permissions granted to the token to
+            access servers, channels and messages.
+          </small>
       </form>
     </div>
   );
@@ -827,17 +831,17 @@ export default function Home() {
     <aside className="channel-sidebar">
       <header>
         <div>
-          <strong>{guilds.find((guild) => guild.id === selectedGuildId)?.name ?? 'Mensagens Diretas'}</strong>
+          <strong>{guilds.find((guild) => guild.id === selectedGuildId)?.name ?? 'Direct Messages'}</strong>
           {botUser && <span>{formatUserTag(botUser)}</span>}
         </div>
         <button onClick={logout} type="button">
-          Sair
+          Logout
         </button>
       </header>
       <section>
         {selectedGuildId ? (
           <div className="channel-groups">
-            {isLoadingChannels && <p className="placeholder">Carregando canais...</p>}
+            {isLoadingChannels && <p className="placeholder">Loading channels...</p>}
             {!isLoadingChannels && (
               <>
                 {uncategorizedChannels.length > 0 && (
@@ -857,7 +861,7 @@ export default function Home() {
                 )}
                 {categoryGroups.map(({ category, channels: groupedChannels }) => (
                   <div key={category.id} className="channel-category">
-                    <div className="channel-category-title">{category.name || 'Sem categoria'}</div>
+                    <div className="channel-category-title">{category.name || 'No category'}</div>
                     <ul>
                       {groupedChannels.map((channel) => (
                         <li key={channel.id}>
@@ -874,7 +878,7 @@ export default function Home() {
                   </div>
                 ))}
                 {uncategorizedChannels.length === 0 && categoryGroups.length === 0 && (
-                  <p className="placeholder">Nenhum canal de texto disponível.</p>
+                  <p className="placeholder">No text channels available.</p>
                 )}
               </>
             )}
@@ -883,7 +887,7 @@ export default function Home() {
           <ul>
             {dmChannels.map((channel) => {
               const recipient = channel.recipients?.[0];
-              const name = recipient ? formatUserTag(recipient) : 'Canal Direto';
+              const name = recipient ? formatUserTag(recipient) : 'Direct Channel';
               return (
                 <li key={channel.id}>
                   <button
@@ -899,7 +903,7 @@ export default function Home() {
                 </li>
               );
             })}
-            {dmChannels.length === 0 && <li className="placeholder">Nenhuma DM encontrada.</li>}
+            {dmChannels.length === 0 && <li className="placeholder">No DMs found.</li>}
           </ul>
         )}
       </section>
@@ -911,13 +915,13 @@ export default function Home() {
       ? selectedGuildId
         ? `#${selectedChannel.name}`
         : getChannelDisplayName(selectedChannel)
-      : 'Selecione um canal';
+      : 'Select a channel';
 
     const composerPlaceholder = selectedChannel
       ? selectedGuildId
-        ? `Enviar mensagem para ${selectedChannel.name}`
-        : `Enviar mensagem para ${getChannelDisplayName(selectedChannel)}`
-      : 'Selecione um canal para enviar mensagens';
+        ? `Send message to ${selectedChannel.name}`
+        : `Send message to ${getChannelDisplayName(selectedChannel)}`
+      : 'Select a channel to send messages';
 
     return (
       <main className="chat-area">
@@ -925,14 +929,14 @@ export default function Home() {
           <div>
             <h2>{headerTitle}</h2>
             <span>
-              {botUser ? `Conectado como ${formatUserTag(botUser)}` : 'Não autenticado'}
+              {botUser ? `Connected as ${formatUserTag(botUser)}` : 'Not authenticated'}
             </span>
           </div>
         </header>
         <section className="message-list">
-          {isLoadingMessages && <div className="placeholder">Carregando mensagens...</div>}
+          {isLoadingMessages && <div className="placeholder">Loading messages...</div>}
           {!isLoadingMessages && messages.length === 0 && (
-            <div className="placeholder">Nenhuma mensagem carregada ainda.</div>
+            <div className="placeholder">No messages loaded yet.</div>
           )}
           {messages.map((message) => {
             const hasContent = Boolean(message.content?.trim());
@@ -960,7 +964,7 @@ export default function Home() {
                   )}
                   {!hasContent && !hasEmbeds && !hasAttachments && (
                     <p className="message-placeholder">
-                      <em>Mensagem sem conteúdo</em>
+                      <em>Message without content</em>
                     </p>
                   )}
                   {hasAttachments && (
@@ -995,7 +999,7 @@ export default function Home() {
               rows={2}
             />
             <button type="submit" disabled={!selectedChannelId || !messageInput.trim()}>
-              Enviar
+              Send
             </button>
           </form>
         </footer>
@@ -1014,12 +1018,12 @@ export default function Home() {
       {renderMessages()}
       <aside className="dm-sidebar">
         <header>
-          <strong>Mensagens Diretas</strong>
+          <strong>Direct Messages</strong>
         </header>
         <ul>
           {dmChannels.map((channel) => {
             const recipient = channel.recipients?.[0];
-            const name = recipient ? formatUserTag(recipient) : 'Canal Direto';
+            const name = recipient ? formatUserTag(recipient) : 'Direct Channel';
             return (
               <li key={channel.id}>
                 <button
@@ -1035,7 +1039,7 @@ export default function Home() {
               </li>
             );
           })}
-          {dmChannels.length === 0 && <li className="placeholder">Sem conversas</li>}
+          {dmChannels.length === 0 && <li className="placeholder">No conversations</li>}
         </ul>
       </aside>
     </div>

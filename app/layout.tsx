@@ -2,8 +2,8 @@ import './globals.css';
 import { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'Discord Bot Client',
-  description: 'Cliente web para controlar bots do Discord com experiência semelhante ao aplicativo oficial.'
+  title: 'BotClienty',
+  description: 'Modern web client to control Discord bots: view servers, channels and messages, and send messages directly with a UI inspired by the official app.'
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
