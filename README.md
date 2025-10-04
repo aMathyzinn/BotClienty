@@ -132,7 +132,8 @@
 <details>
 <summary><b>💬 Chat</b> – servidores, canais e mensagens</summary>
 
-> Navegue pela guild tree, visualize embeds e anexos em tempo real. 
+> Navegue pela guild tree, visualize embeds e anexos em tempo real.
+ ![Tela de Login](./public/screenshot-chats.png)
 
 </details>
 
