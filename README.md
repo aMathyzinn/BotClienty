@@ -149,7 +149,7 @@ npm --version   # 8.x ou superior
 
 ```bash
 # 1️⃣ Clone
-git clone https://github.com/yourusername/botclienty.git
+git clone https://github.com/amathyzinn/botclienty.git
 cd botclienty
 
 # 2️⃣ Dependências
