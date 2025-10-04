@@ -45,7 +45,7 @@
 <table>
   <tr>
     <td align="center" width="33%">
-      <img width="48" height="48" src="https://img.icons8.com/fluency/48/1E3A8A/security-shield-blue.png" alt="Security"/>
+      <img width="48" height="48" src="https://img.icons8.com/?size=100&id=Kp3rKjBdoB5B&format=png&color=228BE6" alt="Security"/>
       <br/>
       <b>🔐 Secure Authentication</b><br/>
       <sub>Connect with bot token without third-party data sharing</sub>
@@ -91,12 +91,12 @@
 ### 🔑 Authentication Screen
 > Clean and straightforward bot token authentication
 
-<img src="https://via.placeholder.com/800x400/0F172A/1E3A8A?text=Login+Screen+Preview" alt="Login Screen" width="100%">
+<img src="./public/screenshot-token.png" alt="Login Screen" width="100%">
 
 ### 💬 Chat Interface
 > Navigate guild tree, view embeds and attachments in real-time
 
-<img src="https://via.placeholder.com/800x400/0F172A/1E3A8A?text=Chat+Interface+Preview" alt="Chat Interface" width="100%">
+<img src="./public/screenshot-chats.png" alt="Chat Interface" width="100%">
 
 ### 📱 Responsive Design
 > Adaptive UI with consistent typography and spacing
