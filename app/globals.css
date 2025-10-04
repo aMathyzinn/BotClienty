@@ -320,6 +320,144 @@ input, textarea {
   white-space: pre-wrap;
 }
 
+.message-content {
+  color: #dbdee1;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.message-placeholder {
+  color: #939aa4;
+}
+
+.message-text {
+  white-space: pre-wrap;
+}
+
+.message-content a,
+.embed-content a,
+.embed-footer a {
+  color: #00a8fc;
+  text-decoration: underline;
+}
+
+.custom-emoji {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.embed {
+  margin-top: 0.5rem;
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #2f3136;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.embed-color {
+  width: 4px;
+}
+
+.embed-content {
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.embed-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #b5bac1;
+}
+
+.embed-author img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.embed-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #f2f3f5;
+}
+
+.embed-text {
+  color: #dbdee1;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.embed-fields {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.embed-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem 0;
+}
+
+.embed-field.inline {
+  grid-column: span 1;
+}
+
+.embed-field:not(.inline) {
+  grid-column: 1 / -1;
+}
+
+.embed-field-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b5bac1;
+  text-transform: uppercase;
+}
+
+.embed-field-value {
+  color: #f2f3f5;
+  white-space: pre-wrap;
+  line-height: 1.35;
+}
+
+.embed-image {
+  width: 100%;
+  border-radius: 4px;
+  max-height: 320px;
+  object-fit: contain;
+}
+
+.embed-thumbnail {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  align-self: flex-end;
+}
+
+.embed-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #b5bac1;
+  font-size: 0.75rem;
+}
+
+.embed-footer img {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
 .message-composer {
   padding: 1rem 1.5rem;
   border-top: 1px solid #2b2d31;
