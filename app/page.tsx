@@ -32,7 +32,179 @@ type DiscordMessage = {
   content: string;
   author: DiscordUser;
   timestamp: string;
+  embeds?: DiscordEmbed[];
 };
+
+type DiscordEmbed = {
+  title?: string;
+  description?: string;
+  url?: string;
+  color?: number;
+  fields?: { name: string; value: string; inline?: boolean }[];
+  author?: {
+    name?: string;
+    icon_url?: string;
+    url?: string;
+  };
+  footer?: {
+    text: string;
+    icon_url?: string;
+  };
+  image?: { url: string } | null;
+  thumbnail?: { url: string } | null;
+};
+
+type MessageContentPart =
+  | { type: 'text'; content: string }
+  | { type: 'link'; url: string }
+  | { type: 'emoji'; id: string; name: string; animated: boolean };
+
+function parseMessageContent(content: string): MessageContentPart[] {
+  const parts: MessageContentPart[] = [];
+  const pattern = /(<a?:[\w-]+:\d+>)|(https?:\/\/[^\s]+)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', content: content.slice(lastIndex, match.index) });
+    }
+
+    if (match[1]) {
+      const emojiMatch = /<(a?):([\w-]+):(\d+)>/.exec(match[1]);
+      if (emojiMatch) {
+        parts.push({
+          type: 'emoji',
+          animated: emojiMatch[1] === 'a',
+          name: emojiMatch[2],
+          id: emojiMatch[3]
+        });
+      }
+    } else if (match[2]) {
+      parts.push({ type: 'link', url: match[2] });
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push({ type: 'text', content: content.slice(lastIndex) });
+  }
+
+  if (parts.length === 0) {
+    return [{ type: 'text', content }];
+  }
+
+  return parts;
+}
+
+function renderFormattedContent(content: string) {
+  return parseMessageContent(content).map((part, index) => {
+    if (part.type === 'text') {
+      return (
+        <span key={`text-${index}`} className="message-text">
+          {part.content}
+        </span>
+      );
+    }
+
+    if (part.type === 'link') {
+      return (
+        <a
+          key={`link-${index}`}
+          href={part.url}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          {part.url}
+        </a>
+      );
+    }
+
+    return (
+      <img
+        key={`emoji-${index}`}
+        src={`https://cdn.discordapp.com/emojis/${part.id}.${part.animated ? 'gif' : 'png'}?quality=lossless`}
+        alt={`:${part.name}:`}
+        className="custom-emoji"
+      />
+    );
+  });
+}
+
+function renderEmbedText(content?: string) {
+  if (!content) return null;
+  return <div className="embed-text">{renderFormattedContent(content)}</div>;
+}
+
+function renderEmbed(embed: DiscordEmbed, index: number) {
+  const color = embed.color
+    ? `#${embed.color.toString(16).padStart(6, '0')}`
+    : '#5865f2';
+
+  return (
+    <div key={`embed-${index}`} className="embed">
+      <div className="embed-color" style={{ backgroundColor: color }} />
+      <div className="embed-content">
+        {embed.author && (embed.author.name || embed.author.icon_url) && (
+          <div className="embed-author">
+            {embed.author.icon_url && (
+              <img src={embed.author.icon_url} alt={embed.author.name ?? 'Autor'} />
+            )}
+            {embed.author.url ? (
+              <a href={embed.author.url} target="_blank" rel="noreferrer noopener">
+                {embed.author.name ?? 'Autor'}
+              </a>
+            ) : (
+              <span>{embed.author.name}</span>
+            )}
+          </div>
+        )}
+        {embed.title && (
+          embed.url ? (
+            <a className="embed-title" href={embed.url} target="_blank" rel="noreferrer noopener">
+              {embed.title}
+            </a>
+          ) : (
+            <div className="embed-title">{embed.title}</div>
+          )
+        )}
+        {renderEmbedText(embed.description)}
+        {embed.fields && embed.fields.length > 0 && (
+          <div className="embed-fields">
+            {embed.fields.map((field, fieldIndex) => (
+              <div
+                key={`embed-field-${fieldIndex}`}
+                className={`embed-field ${field.inline ? 'inline' : ''}`}
+              >
+                <div className="embed-field-name">{field.name}</div>
+                <div className="embed-field-value">{renderFormattedContent(field.value)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {embed.image?.url && (
+          <img src={embed.image.url} alt={embed.title ?? 'Imagem do embed'} className="embed-image" />
+        )}
+        {embed.thumbnail?.url && (
+          <img
+            src={embed.thumbnail.url}
+            alt={embed.title ?? 'Miniatura do embed'}
+            className="embed-thumbnail"
+          />
+        )}
+        {embed.footer && (
+          <div className="embed-footer">
+            {embed.footer.icon_url && (
+              <img src={embed.footer.icon_url} alt={embed.footer.text} />
+            )}
+            <span>{embed.footer.text}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const DISCORD_CDN = 'https://cdn.discordapp.com';
 
@@ -467,18 +639,31 @@ export default function Home() {
         {!isLoadingMessages && messages.length === 0 && (
           <div className="placeholder">Nenhuma mensagem carregada ainda.</div>
         )}
-        {messages.map((message) => (
-          <article key={message.id} className="message">
-            <img src={userAvatarUrl(message.author)} alt={message.author.username} />
-            <div>
-              <header>
-                <strong>{message.author.global_name ?? message.author.username}</strong>
-                <span>{formatDate(message.timestamp)}</span>
-              </header>
-              <p>{message.content || <em>Mensagem sem conteúdo</em>}</p>
-            </div>
-          </article>
-        ))}
+        {messages.map((message) => {
+          const hasContent = Boolean(message.content?.trim());
+          const hasEmbeds = Boolean(message.embeds && message.embeds.length > 0);
+
+          return (
+            <article key={message.id} className="message">
+              <img src={userAvatarUrl(message.author)} alt={message.author.username} />
+              <div>
+                <header>
+                  <strong>{message.author.global_name ?? message.author.username}</strong>
+                  <span>{formatDate(message.timestamp)}</span>
+                </header>
+                {hasContent && (
+                  <div className="message-content">{renderFormattedContent(message.content)}</div>
+                )}
+                {!hasContent && !hasEmbeds && (
+                  <p className="message-placeholder">
+                    <em>Mensagem sem conteúdo</em>
+                  </p>
+                )}
+                {hasEmbeds && message.embeds?.map((embed, index) => renderEmbed(embed, index))}
+              </div>
+            </article>
+          );
+        })}
       </section>
       <footer className="message-composer">
         <form onSubmit={handleSendMessage}>

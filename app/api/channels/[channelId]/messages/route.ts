@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { discordRequest, discordRequestWithBody, extractToken } from '@/lib/discord';
 
+type DiscordEmbed = {
+  title?: string;
+  description?: string;
+  url?: string;
+  color?: number;
+  fields?: { name: string; value: string; inline?: boolean }[];
+  author?: {
+    name?: string;
+    icon_url?: string;
+    url?: string;
+  };
+  footer?: {
+    text: string;
+    icon_url?: string;
+  };
+  image?: { url: string } | null;
+  thumbnail?: { url: string } | null;
+};
+
 type DiscordMessage = {
   id: string;
   content: string;
+  embeds?: DiscordEmbed[];
   author: {
     id: string;
     username: string;
