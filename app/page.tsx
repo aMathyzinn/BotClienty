@@ -778,7 +778,7 @@ export default function Home() {
   const renderLogin = () => (
     <div className="login-overlay">
       <div className="topbar">
-        <img src="/logo.webp" alt="BotClienty Logo" className="topbar-logo" />
+        <img src="/logo.png" alt="BotClienty Logo" className="topbar-logo" />
         <strong>BotClienty</strong>
       </div>
       <form className="login-card" onSubmit={handleLogin}>
