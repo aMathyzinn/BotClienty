@@ -125,7 +125,7 @@
 
 > Insira o token do bot e prossiga.  
 
-![Tela de Login](./screenshot-token.png)
+![Tela de Login](./public/screenshot-token.png)
 
 </details>
 
